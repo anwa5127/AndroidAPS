@@ -51,7 +51,9 @@ function enable_smb(
     profile,
     microBolusAllowed,
     meal_data,
-    target_bg
+    bg,
+    target_bg,
+    high_bg
 ) {
     // disable SMB when a high temptarget is set
     if (! microBolusAllowed) {
@@ -102,6 +104,18 @@ function enable_smb(
             console.error("Warning: SMB enabled within 6h of using Bolus Wizard: be sure to easy bolus 30s before using Bolus Wizard");
         } else {
             console.error("SMB enabled for temptarget of",convert_bg(target_bg, profile));
+        }
+        return true;
+    }
+
+    // enable SMB if high bg is found
+    if (profile.enableSMB_high_bg === true && high_bg !== null && bg >= high_bg) {
+        console.error("Checking BG to see if High for SMB enablement.");
+        console.error("Current BG", bg, " | High BG ", high_bg);
+        if (meal_data.bwFound) {
+            console.error("Warning: High BG SMB enabled within 6h of using Bolus Wizard: be sure to easy bolus 30s before using Bolus Wizard");
+        } else {
+            console.error("High BG detected. Enabling SMB.");
         }
         return true;
     }
@@ -178,6 +192,8 @@ var determine_basal = function determine_basal(glucose_status, currenttemp, iob_
     var target_bg;
     var min_bg;
     var max_bg;
+    var high_bg;
+
     if (typeof profile.min_bg !== 'undefined') {
             min_bg = profile.min_bg;
     }
@@ -398,6 +414,10 @@ var determine_basal = function determine_basal(glucose_status, currenttemp, iob_
     // min_bg of 90 -> threshold of 65, 100 -> 70 110 -> 75, and 130 -> 85
     var threshold = min_bg - 0.5*(min_bg-40);
 
+    if (typeof profile.high_bg !== 'undefined') {
+        high_bg = Math.max(profile.high_bg, min_bg);
+    }
+
     //console.error(reservoir_data);
 
     rT = {
@@ -429,7 +449,9 @@ var determine_basal = function determine_basal(glucose_status, currenttemp, iob_
         profile,
         microBolusAllowed,
         meal_data,
-        target_bg
+        bg,
+        target_bg,
+        high_bg
     );
 
     // enable UAM (if enabled in preferences)
